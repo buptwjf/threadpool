@@ -32,13 +32,10 @@ class Thread {
 public:
     // 线程函数对象类型
     using ThreadFunc = std::function<void()>;
-
     // 线程构造
     explicit Thread(ThreadFunc func);
-
     // 线程析构
     ~Thread();
-
     // 启动线程
     void start();
 
@@ -65,22 +62,16 @@ public:
 
     // 线程池的析构
     ~Threadpool();
-
     // 设置线程池的工作模式
     void setMode(PoolMode mode);
-
     // 开启线程池，并设置线程池的初始数量
     void start(int initThreadSize = 4);
-
     // 设置 task 任务列表上线的阈值
     void setTaskQueMaxThreshold(int threshold);
-
     // 向线程池上提交任务 用户调用该接口，传入任务对象，生产任务
     void submitTask(const std::shared_ptr<Task> &sp);
-
     // 禁止拷贝构造和拷贝赋值
     Threadpool(const Threadpool &) = delete;
-
     Threadpool &operator=(const Threadpool &) = delete;
 
 private:
