@@ -1,3 +1,0 @@
-D:/git_rep/threadpool/cmake-build-debug/CMakeFiles/my_threadpool.dir
-D:/git_rep/threadpool/cmake-build-debug/CMakeFiles/edit_cache.dir
-D:/git_rep/threadpool/cmake-build-debug/CMakeFiles/rebuild_cache.dir

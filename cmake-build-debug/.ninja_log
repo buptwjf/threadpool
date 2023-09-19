@@ -1,9 +1,0 @@
-# ninja log v5
-808	949	7159503716173493	11.exe	cd0d107c0496ba5b
-4	1338	7167508697511622	CMakeFiles/my_threadpool.dir/Threadpool.cpp.obj	573926b69a76d59e
-8	984	7168353387755084	build.ninja	a0c462e5d177f1b1
-3	1013	7167511140131406	CMakeFiles/my_threadpool.dir/Threadpool_test.cpp.obj	5238f87a67d60a09
-1013	1187	7167511141855508	my_threadpool.exe	47378e9b6cca1724
-2	2488	7168353451692459	CMakeFiles/my_threadpool.dir/Threadpool_test.cpp.obj	fd1b4f41a7681c75
-17	2854	7168353455324519	CMakeFiles/my_threadpool.dir/Threadpool.cpp.obj	dc7318db491e07d7
-2855	3231	7168353459067821	my_threadpool.exe	49c0bde8cddede0f
