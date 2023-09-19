@@ -49,8 +49,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "D:/02learn/github repositoty/threadpool/cmake-build-debug",
-		"source" : "D:/02learn/github repositoty/threadpool"
+		"build" : "D:/git_rep/threadpool/cmake-build-debug",
+		"source" : "D:/git_rep/threadpool"
 	},
 	"version" : 
 	{

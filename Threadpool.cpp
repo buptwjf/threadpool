@@ -1,6 +1,7 @@
 #include "Threadpool.h"
 #include <thread>
 #include <iostream>
+#include <utility>
 //#include <utility>
 
 const int TASK_MAX_THRESHOLD = 4;
@@ -41,14 +42,13 @@ void Threadpool::start(int initThreadSize) {
     }
 }
 
-
 // 设置 task 任务列表上线的阈值
 void Threadpool::setTaskQueMaxThreshold(int threshold) {
     taskQueMaxThreshold_ = threshold;
 }
 
 // 向线程池上提交任务
-void Threadpool::submitTask(const std::shared_ptr<Task>& sp) {
+void Threadpool::submitTask(const std::shared_ptr<Task> &sp) {
     // 作为生产者，首先要获取锁
     std::unique_lock<std::mutex> lock(taskQueMtx_);
     // 线程的通信 等待任务队列有空余
@@ -57,18 +57,17 @@ void Threadpool::submitTask(const std::shared_ptr<Task>& sp) {
     //    }
 
     // 使用更简洁的写法
-    /*
-     * wait         与时间无关
-     * wait_for     等待某一时间长度
-     * wait_until   等到某一时刻
-     * */
     // 这里有个需求，用户不能等待过久？不应该超过1s，负责就要判断任务失败
     if (!notFull_.wait_for(lock, std::chrono::seconds(1),
                            [&]() -> bool { return taskQue_.size() < taskQueMaxThreshold_; })) {
         // 表示 notFull_ 等待 1 s 条件依然没有满足
         std::cerr << "task queue is full, submit task fail." << std::endl;
+        // 返回一个 Result 对象
+//    return task->getResult(); // Task Result
+//    这样不好，线程执行完 task，任务 task 就被析构掉，依赖于task 的 result 就没了
+//    result 不能依赖于 task
+//        return Result(sp, false);
     }
-
 
     // 如果有空余，把任务放入任务队列中
     taskQue_.emplace(sp);
@@ -76,21 +75,20 @@ void Threadpool::submitTask(const std::shared_ptr<Task>& sp) {
 
     // 因为放入新的任务了，所以需要更新条件变量，在 notEmpty_ 上进行通知
     notEmpty_.notify_one();
+
+//    return Result(sp);
+
 }
 
 // 定义线程函数 - 负责消费任务
 void Threadpool::threadFunc() {
-//    std::cout << "begin threadFunc tid:";
-//    std::cout << std::this_thread::get_id() << std::endl;
-//    std::cout << "end threadFunc tid:";
-//    std::cout << std::this_thread::get_id() << std::endl;
     std::shared_ptr<Task> task;
     for (;;) { // 线程池一直循环
         // 先获取锁
         {
             std::unique_lock<std::mutex> lock(taskQueMtx_);
             std::cout << "tid:" << std::this_thread::get_id()
-                << " try get task... " << std::endl;
+                      << " try get task... " << std::endl;
             // 等待 notEmpty 条件
             notEmpty_.wait(lock, [&]() -> bool { return !taskQue_.empty(); });
             std::cout << "tid:" << std::this_thread::get_id()
@@ -100,7 +98,7 @@ void Threadpool::threadFunc() {
             taskQue_.pop();
             taskSize_--;
             // 如果依然有剩余任务，继续通知其他线程执行任务
-            if(!taskQue_.empty()){
+            if (!taskQue_.empty()) {
                 notEmpty_.notify_all();
             }
             // 取出一个任务，进行通知
@@ -109,8 +107,8 @@ void Threadpool::threadFunc() {
 
         // 当前线程负责执行这个任务
         if (task != nullptr) {
-            task->run(); // 任务的执行不应该包含在锁里
-            // 执行完一个任务需要进行通知
+//            task->run(); // 任务的执行不应该包含在锁里
+            task->exec();
         }
     }
 }
@@ -118,9 +116,7 @@ void Threadpool::threadFunc() {
 ////////////////////////// 线程方法实现
 
 // 线程构造
-Thread::Thread(Thread::ThreadFunc  func) : func_(std::move(func)) {
-
-}
+Thread::Thread(Thread::ThreadFunc func) : func_(std::move(func)) {}
 
 // 线程析构
 Thread::~Thread() = default;
@@ -128,6 +124,41 @@ Thread::~Thread() = default;
 // 启动线程
 void Thread::start() {
     // 创建一个线程来执行一个线程函数
-    std::thread t(func_); // C++ threadpool 线程对象t 和线程函数 func_
+    std::thread t(func_);   // C++ threadpool 线程对象t 和线程函数 func_
     t.detach(); // 设置分离线程211
+}
+
+//////////////////////////////////////// Task 方法实现
+Task::Task() : result_(nullptr) {}
+
+void Task::exec() {
+    if (result_ != nullptr) {
+        result_->setVal(run()); // 这里发生了多态调用
+    }
+}
+
+void Task::setResult(Result *res) {
+    if (result_ != nullptr) { // 保守起见
+        result_ = res;
+    }
+}
+
+///////////////////////// Result 方法的实现
+Result::Result(std::shared_ptr<Task> task, bool isValid) :
+        task_(std::move(task)), isValid_(isValid) {
+    task_->setResult(this);
+}
+
+Any Result::get() {
+    if (!isValid_) {
+        return "";
+    }
+    sem_.wait(); // 任务如果没有执行完 ,这里会阻塞用户的线程
+    return std::move(any_);
+}
+
+void Result::setVal(Any any) {
+    // 存储 task 的返回值
+    this->any_ = std::move(any);
+    sem_.post(); // 已经获取任务的返回值
 }
