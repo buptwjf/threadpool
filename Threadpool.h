@@ -19,6 +19,54 @@ enum class PoolMode {
 };
 
 
+// Any 类型，可以接受其他任意类型的数据
+template <typename T>
+class Any {
+public:
+    Any() = default;
+
+    ~Any() = default;
+
+    // 可以让接收任意类型的数据
+    explicit Any(T data) : base_(std::make_unique<Derive>(data)) {}
+
+    //  由于unique_ptr 没有左值的拷贝构造和赋值，因此 Any 类也设置成相同的类型
+    Any(const Any &) = delete;
+    Any &operator=(const Any &) = delete;
+
+    // 给出右值相关的操作
+    Any(Any &&) = default; // 这里不要随便加 const
+    Any &operator=(Any &&) = default;
+
+    // Any 能够实现接收任意类型的数据
+    // 怎么从 base_ 类找到他所指向 Derive 对象，并去除 data 成员变量
+    T cast_() {
+        // 基类指针转成 => 派生类指针  RTTI
+        Derive *pd = dynamic_cast <Derive *> (base_.get()); // 利用智能指针的获取方法
+        if (pd == nullptr) {
+            throw std::runtime_error("type is unMatch!");  // expection
+        }
+        return pd->data_;
+    }
+
+private:
+    // 基类类型
+    class Base {
+    public:
+        virtual  ~Base() = default;
+    };
+
+    // 派生类类型
+    class Derive : public Base {
+    public:
+        explicit Derive(T data) : data_(data) {} // 这里只能写到头文件中
+        T data_; // 保证了返回值真正的类型
+    };
+
+    // 定义一个基类的指针
+    std::unique_ptr<Base> base_;
+};
+
 // 任务类型 - 抽象类
 class Task {
 public:
