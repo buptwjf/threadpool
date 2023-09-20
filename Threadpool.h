@@ -23,9 +23,8 @@ public:
     ~Any() = default;
 
     template <typename T>
-    Any(T data):base_(std::make_unique<Derive < T>>
+    Any(T data) : base_(std::make_unique<Derive< T>>
     (data)) {}
-
     // 可以让接收任意类型的数据
     //  由于unique_ptr 没有左值的拷贝构造和赋值，因此 Any 类也设置成相同的类型
     Any(const Any &) = delete;
@@ -58,13 +57,16 @@ private:
     template <typename T>
     class Derive : public Base {
     public:
-        Derive(T data) : data_(data) {} // 这里只能写到头文件中
+        explicit Derive(T data) : data_(data) {} // 这里只能写到头文件中
         T data_; // 保证了返回值真正的类型
     };
 
     // 定义一个基类的指针
     std::unique_ptr<Base> base_;
 };
+
+
+
 
 // 实现一个信号量
 //class Semaphore {
