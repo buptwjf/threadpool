@@ -99,24 +99,24 @@ private:
 class Task;
 
 // 实现提交到线程池的 task 任务，执行完成后的返回值类型 Result
-//class Result {
-//public:
-//    explicit Result(std::shared_ptr<Task> task, bool isValid = true);
-//
-//    ~Result() = default;
-//
-//    // 问题1. setVal 方法，获取任务执行的返回值
-//    void setVal(Any any);
-//
-//    // 问题2. get 方法，用户调取这个方法获取 task 的返回值
-//    Any get();
-//
-//private:
-//    Any any_;                    // 存储任务的返回值
-//    Semaphore sem_;                 // 线程的信号量
-//    std::shared_ptr<Task> task_;    // 指向对应获取返回值的 Task 对象
-//    std::atomic_bool isValid_;
-//};
+class Result {
+public:
+    explicit Result(std::shared_ptr<Task> task, bool isValid = true);
+
+    ~Result() = default;
+
+    // 问题1. setVal 方法，获取任务执行的返回值
+    void setVal(Any any);
+
+    // 问题2. get 方法，用户调取这个方法获取 task 的返回值
+    Any get();
+
+private:
+    Any any_;                    // 存储任务的返回值
+    Semaphore sem_;                 // 线程的信号量
+    std::shared_ptr<Task> task_;    // 指向对应获取返回值的 Task 对象
+    std::atomic_bool isValid_;
+};
 //
 //
 //// 任务类型 - 抽象类
