@@ -48,27 +48,17 @@ void Threadpool::setTaskQueMaxThreshold(int threshold) {
 }
 
 // 向线程池上提交任务
-void Threadpool::submitTask(const std::shared_ptr<Task>& sp) {
+Result Threadpool::submitTask(const std::shared_ptr<Task> &sp) {
     // 作为生产者，首先要获取锁
     std::unique_lock<std::mutex> lock(taskQueMtx_);
     // 线程的通信 等待任务队列有空余
-    //    while (taskQue_.size() == taskQueMaxThreshold_) {
-    //        notFull_.wait(lock); // 1. 线程变为等待状态  2. 并且把锁释放
-    //    }
-
-    // 使用更简洁的写法
-    /*
-     * wait         与时间无关
-     * wait_for     等待某一时间长度
-     * wait_until   等到某一时刻
-     * */
     // 这里有个需求，用户不能等待过久？不应该超过1s，负责就要判断任务失败
     if (!notFull_.wait_for(lock, std::chrono::seconds(1),
                            [&]() -> bool { return taskQue_.size() < taskQueMaxThreshold_; })) {
         // 表示 notFull_ 等待 1 s 条件依然没有满足
         std::cerr << "task queue is full, submit task fail." << std::endl;
+        return Result(sp, false);
     }
-
 
     // 如果有空余，把任务放入任务队列中
     taskQue_.emplace(sp);
@@ -76,6 +66,8 @@ void Threadpool::submitTask(const std::shared_ptr<Task>& sp) {
 
     // 因为放入新的任务了，所以需要更新条件变量，在 notEmpty_ 上进行通知
     notEmpty_.notify_one();
+    // 返回任务对象
+    return Result(sp);
 }
 
 // 定义线程函数 - 负责消费任务
@@ -90,7 +82,7 @@ void Threadpool::threadFunc() {
         {
             std::unique_lock<std::mutex> lock(taskQueMtx_);
             std::cout << "tid:" << std::this_thread::get_id()
-                << " try get task... " << std::endl;
+                      << " try get task... " << std::endl;
             // 等待 notEmpty 条件
             notEmpty_.wait(lock, [&]() -> bool { return !taskQue_.empty(); });
             std::cout << "tid:" << std::this_thread::get_id()
@@ -100,7 +92,7 @@ void Threadpool::threadFunc() {
             taskQue_.pop();
             taskSize_--;
             // 如果依然有剩余任务，继续通知其他线程执行任务
-            if(!taskQue_.empty()){
+            if (!taskQue_.empty()) {
                 notEmpty_.notify_all();
             }
             // 取出一个任务，进行通知
@@ -109,8 +101,8 @@ void Threadpool::threadFunc() {
 
         // 当前线程负责执行这个任务
         if (task != nullptr) {
-            task->run(); // 任务的执行不应该包含在锁里
-            // 执行完一个任务需要进行通知
+//            task->run(); // 任务的执行不应该包含在锁里
+            task->exec();
         }
     }
 }
@@ -118,7 +110,7 @@ void Threadpool::threadFunc() {
 ////////////////////////// 线程方法实现
 
 // 线程构造
-Thread::Thread(Thread::ThreadFunc  func) : func_(std::move(func)) {
+Thread::Thread(Thread::ThreadFunc func) : func_(std::move(func)) {
 
 }
 
@@ -131,3 +123,42 @@ void Thread::start() {
     std::thread t(func_); // C++ threadpool 线程对象t 和线程函数 func_
     t.detach(); // 设置分离线程211
 }
+
+/////////////////////////////////////////////////////////
+
+Any Result::get() {
+    if (!isValid_) {
+        return "";
+    }
+    // 如果任务在线程池中还没执行完的话，可以先阻塞用户
+    sem_.wait();
+    return std::move(any_); // 因为 Any 本来就不能拷贝赋值
+}
+
+void Result::setVal(Any any) { // 谁调用的？
+    // 存储 task 的返回值
+    this->any_ = std::move(any);
+    sem_.post(); // 已经获取了任务的返回值，增加信号量资源
+}
+
+Result::Result(std::shared_ptr<Task> task, bool isValid)
+        : task_(std::move(task)), isValid_(isValid) {
+    task_->setResult(this);
+}
+
+///////////////////////////////////////////////
+void Task::exec() {
+    if (result_ != nullptr)
+        // 如果 Result 里面也有个 Task 对象的话
+        result_->setVal(run()); // 这里发生了多态调用
+    // 这个 Result 从哪来，给 Task 增加一个 Result
+}
+
+void Task::setResult(Result *res) {
+    result_ = res;
+}
+
+Task::Task() : result_(nullptr) {}
+
+
+

@@ -4,6 +4,7 @@
 #ifndef THREADPOOL_H
 #define THREADPOOL_H
 
+#include <utility>
 #include <vector>
 #include <queue>
 #include <memory>
@@ -22,12 +23,13 @@ public:
 
     ~Any() = default;
 
-    template <typename T>
-    Any(T data) : base_(std::make_unique<Derive< T>>
-    (data)) {}
+    template<typename T>
+    Any(T data) : base_(std::make_unique<Derive<T >>(data)) {}
+
     // 可以让接收任意类型的数据
     //  由于unique_ptr 没有左值的拷贝构造和赋值，因此 Any 类也设置成相同的类型
     Any(const Any &) = delete;
+
     Any &operator=(const Any &) = delete;
 
     // 给出右值相关的操作
@@ -36,10 +38,10 @@ public:
 
     // Any 能够实现接收任意类型的数据
     // 怎么从 base_ 类找到他所指向 Derive 对象，并去除 data 成员变量
-    template <typename T>
+    template<typename T>
     T cast_() {
         // 基类指针转成 => 派生类指针  RTTI
-        Derive <T> *pd = dynamic_cast <Derive <T> *> (base_.get()); // 利用智能指针的获取方法
+        Derive<T> *pd = dynamic_cast <Derive<T> *> (base_.get()); // 利用智能指针的获取方法
         if (pd == nullptr) {
             throw std::runtime_error("type is unMatch!");  // expection
         }
@@ -54,7 +56,7 @@ private:
     };
 
     // 派生类类型
-    template <typename T>
+    template<typename T>
     class Derive : public Base {
     public:
         explicit Derive(T data) : data_(data) {} // 这里只能写到头文件中
@@ -66,35 +68,33 @@ private:
 };
 
 
-
-
 // 实现一个信号量
-//class Semaphore {
-//public:
-//    explicit Semaphore(int limit = 0) : resLimit_(limit) {}
-//
-//    ~Semaphore() = default;
-//
-//    // 获取一个信号量资源
-//    void wait() {
-//        std::unique_lock<std::mutex> lock(mtx_);
-//        // 等待信号量有资源，没有资源的话，会阻塞当前线程
-//        cond_.wait(lock, [&]() -> bool { return resLimit_ > 0; });
-//        resLimit_--;
-//    }
-//
-//    // 增加一个信号量资源
-//    void post() {
-//        std::unique_lock<std::mutex> lock(mtx_);
-//        resLimit_++;
-//        cond_.notify_all();
-//    }
-//
-//private:
-//    int resLimit_; // 负责资源计数
-//    std::mutex mtx_;
-//    std::condition_variable cond_;
-//};
+class Semaphore {
+public:
+    explicit Semaphore(int limit = 0) : resLimit_(limit) {}
+
+    ~Semaphore() = default;
+
+    // 获取一个信号量资源
+    void wait() {
+        std::unique_lock<std::mutex> lock(mtx_);
+        // 等待信号量有资源，没有资源的话，会阻塞当前线程
+        cond_.wait(lock, [&]() -> bool { return resLimit_ > 0; });
+        resLimit_--;
+    }
+
+    // 增加一个信号量资源
+    void post() {
+        std::unique_lock<std::mutex> lock(mtx_);
+        resLimit_++;
+        cond_.notify_all();
+    }
+
+private:
+    int resLimit_; // 负责资源计数
+    std::mutex mtx_;
+    std::condition_variable cond_;
+};
 
 class Task;
 
@@ -102,6 +102,7 @@ class Task;
 class Result {
 public:
     explicit Result(std::shared_ptr<Task> task, bool isValid = true);
+
 
     ~Result() = default;
 
@@ -112,29 +113,34 @@ public:
     Any get();
 
 private:
-    Any any_;                    // 存储任务的返回值
-    Semaphore sem_;                 // 线程的信号量
-    std::shared_ptr<Task> task_;    // 指向对应获取返回值的 Task 对象
-    std::atomic_bool isValid_;
+    Any any_;                       // 存储任务的返回值
+    Semaphore sem_;                 // 线程通信的信号量
+    std::shared_ptr<Task> task_;   // 指向对应获取返回值的 Task 对象
+    std::atomic_bool isValid_;      // 返回值是否有效
 };
+
 //
 //
 //// 任务类型 - 抽象类
-//class Task {
-//public:
-//    Task();
-//    ~Task() = default;
-//
-//    void exec();
-//    void setResult(Result *res);
-//    // 用户自定义任务类型，从 Task 继承，重写 run 方法，实现自定义类型处理
-//    virtual Any run() = 0;
-//
-//private:
-//    Result *result_; // 不要使用shared_ptr 否则会产生交叉引用
-//    // result 的生命周期一定是长于 task
-//};
-//
+class Task {
+public:
+    Task();
+
+    ~Task() = default;
+
+    void exec();
+
+    void setResult(Result *res);
+
+    // 用户自定义任务类型，从 Task 继承，重写 run 方法，实现自定义类型处理
+    virtual Any run() = 0;
+
+private:
+    Result *result_; // 不要使用shared_ptr 否则会产生交叉引用
+    // result 的生命周期一定是长于 task
+};
+
+
 // 线程池支持的模式
 enum class PoolMode {
     MODE_FIXED, // 固定数量的线程池
@@ -190,7 +196,7 @@ public:
     void setTaskQueMaxThreshold(int threshold);
 
     // 向线程池上提交任务 用户调用该接口，传入任务对象，生产任务
-    void submitTask(const std::shared_ptr<Task> &sp);
+    Result submitTask(const std::shared_ptr<Task> &sp);
 
     // 禁止拷贝构造和拷贝赋值
     Threadpool(const Threadpool &) = delete;
