@@ -4,13 +4,18 @@
 //#include <utility>
 
 const int TASK_MAX_THRESHOLD = 4;
+const int THREAD_MAX_THRESHOLD = 10;
 
 // 线程池的构造函数
 Threadpool::Threadpool() :
         initThreadSize_(0),
         taskSize_(0),
+        curThreadSize_(0),
         poolMode_(PoolMode::MODE_FIXED),
-        taskQueMaxThreshold_(TASK_MAX_THRESHOLD) {
+        taskQueMaxThreshold_(TASK_MAX_THRESHOLD),
+        isPoolRunning_(false),
+        idleThreadSize(0),
+        threadSizeThreashold_(THREAD_MAX_THRESHOLD) {
 }
 
 // 线程池的析构函数
@@ -18,13 +23,19 @@ Threadpool::~Threadpool() = default;
 
 // 设置线程池的工作模式
 void Threadpool::setMode(PoolMode mode) {
+    if (checkRunningState()) {
+        return;
+    }
     poolMode_ = mode;
 }
 
 // 开启线程池
 void Threadpool::start(int initThreadSize) {
+    // 设置线程池的运行状态
+    isPoolRunning_ = true;
     // 记录初始线程个数
     initThreadSize_ = initThreadSize;
+    curThreadSize_ = initThreadSize;
     // 创建线程对象 std::vector<Thread *> threads_;
 
     // 如何向线程注册函数？由线程池定义，线程池需要把线程函数传给线程对象
@@ -37,14 +48,27 @@ void Threadpool::start(int initThreadSize) {
     }; // Thread 需要接收一个 函数对象类型
     // 启动所有线程
     for (auto &i: threads_) {
-        i->start();
+        i->start(); // 执行线程函数
+        idleThreadSize++; // 初始化空闲线程的数量
     }
 }
 
 
 // 设置 task 任务列表上线的阈值
 void Threadpool::setTaskQueMaxThreshold(int threshold) {
+    if (checkRunningState()) {
+        return;
+    }
     taskQueMaxThreshold_ = threshold;
+}
+
+void Threadpool::setThreadSizeThreashold(int threshold) {
+    if (checkRunningState()) {
+        return;
+    }
+    if (poolMode_ == PoolMode::MODE_CACHED) {
+        threadSizeThreashold_ = threshold;
+    }
 }
 
 // 向线程池上提交任务
@@ -66,16 +90,24 @@ Result Threadpool::submitTask(const std::shared_ptr<Task> &sp) {
 
     // 因为放入新的任务了，所以需要更新条件变量，在 notEmpty_ 上进行通知
     notEmpty_.notify_one();
+
+    // cached 任务处理模式比较紧急，适合小而快的任务
+    // 需要根据任务数量和空闲线程的数量，判断是否需要创建出来新的线程出来？
+    if (poolMode_ == PoolMode::MODE_CACHED &&
+        taskSize_ > idleThreadSize &&
+        curThreadSize_ < threadSizeThreashold_) {
+        // 创建新线程 与 start 类似
+        auto ptr = std::make_unique<Thread>([this]() { this->threadFunc(); });
+        threads_.emplace_back(std::move(ptr));
+    }
+
     // 返回任务对象
     return Result(sp);
 }
 
 // 定义线程函数 - 负责消费任务
 void Threadpool::threadFunc() {
-//    std::cout << "begin threadFunc tid:";
-//    std::cout << std::this_thread::get_id() << std::endl;
-//    std::cout << "end threadFunc tid:";
-//    std::cout << std::this_thread::get_id() << std::endl;
+    auto lastTime = std::chrono::high_resolution_clock().now();
     std::shared_ptr<Task> task;
     for (;;) { // 线程池一直循环
         // 先获取锁
@@ -83,8 +115,15 @@ void Threadpool::threadFunc() {
             std::unique_lock<std::mutex> lock(taskQueMtx_);
             std::cout << "tid:" << std::this_thread::get_id()
                       << " try get task... " << std::endl;
-            // 等待 notEmpty 条件
+
+            // cached 模式下，多余创建出来的线程如果超过 60s 没有被使用，就应该进行回收
+            // 当前时间 - 上一次线程执行的时间 > 60s
+
+            // 等待 notEmpty 条件，
             notEmpty_.wait(lock, [&]() -> bool { return !taskQue_.empty(); });
+
+            idleThreadSize--; // 要去取任务去了
+
             std::cout << "tid:" << std::this_thread::get_id()
                       << " get task ! " << std::endl;
             // 从任务队列中取一个任务出来
@@ -104,8 +143,15 @@ void Threadpool::threadFunc() {
 //            task->run(); // 任务的执行不应该包含在锁里
             task->exec();
         }
+
+        idleThreadSize++; // 线程工作完成了
     }
 }
+
+bool Threadpool::checkRunningState() const {
+    return isPoolRunning_;
+}
+
 
 ////////////////////////// 线程方法实现
 
@@ -159,6 +205,4 @@ void Task::setResult(Result *res) {
 }
 
 Task::Task() : result_(nullptr) {}
-
-
 

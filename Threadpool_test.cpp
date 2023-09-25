@@ -49,7 +49,12 @@ private:
 
 int main() {
     Threadpool pool;
+    // 让用户设置线程池的工作模式
+    pool.setMode(PoolMode::MODE_CACHED);
+    // 开始启动线程池
     pool.start(4);
+
+
 
 //    // 希望调用任务都能有返回值。如何设计这个 Result 机制
     Result res1 = pool.submitTask(std::make_shared<MyTask>(1, 100));
