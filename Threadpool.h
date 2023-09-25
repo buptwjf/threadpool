@@ -5,8 +5,9 @@
 #define THREADPOOL_H
 
 #include <utility>
-#include <vector>
+//#include <vector>
 #include <queue>
+#include <unordered_map>
 #include <memory>
 #include <atomic>
 #include <mutex>
@@ -24,9 +25,7 @@ public:
     ~Any() = default;
 
     template<typename T>
-    Any(T data) : base_(std::make_unique<Derive < T >>
-
-    (data)) {}
+    Any(T data);
 
     // 可以让接收任意类型的数据
     //  由于unique_ptr 没有左值的拷贝构造和赋值，因此 Any 类也设置成相同的类型
@@ -68,6 +67,11 @@ private:
     // 定义一个基类的指针
     std::unique_ptr<Base> base_;
 };
+
+template<typename T>
+Any::Any(T data) {
+    base_ = std::make_unique<Derive<T >>(data);
+}
 
 
 // 实现一个信号量
@@ -153,7 +157,7 @@ enum class PoolMode {
 class Thread {
 public:
     // 线程函数对象类型
-    using ThreadFunc = std::function<void()>;
+    using ThreadFunc = std::function<void(int)>;
 
     // 线程构造
     explicit Thread(ThreadFunc func);
@@ -164,8 +168,13 @@ public:
     // 启动线程
     void start();
 
+    // 获取线程 id
+    int getThreadId() const;
+
 private:
     ThreadFunc func_;
+    static int generateId_; // 所有的 Thread 根据 generateId_ 作为自己的值
+    int threadId_; // 保存线程 id
 
 };
 /*
@@ -210,17 +219,19 @@ public:
 
 private:
     // 定义线程函数 - 负责消费任务
-    void threadFunc();
+    void threadFunc(int threadId);
 
     // 坚持 pool 的运行状态
     bool checkRunningState() const;
 
 private:
-    std::vector<std::unique_ptr<Thread>> threads_;  // 线程列表 用 智能指针包装起来
+//    std::vector<std::unique_ptr<Thread>> threads_;  // 线程列表 用 智能指针包装起来
+    std::unordered_map<int, std::unique_ptr<Thread>> threads_;
+
     size_t initThreadSize_;                         // 初始线程的数
     std::atomic_int curThreadSize_;                 // 记录当前线程池里面线程的总数量
-    int threadSizeThreashold_;                      // 线程数量上限阈值
-    std::atomic_int idleThreadSize;                 // 空闲线程的数量
+    int threadSizeThreshold_;                      // 线程数量上限阈值
+    std::atomic_int idleThreadSize_;                 // 空闲线程的数量
 
 
 //    std::queue<Task *> task; // 有可能是临时对象task，因此不能用裸指针，需要延长对象的生命周期

@@ -33,12 +33,14 @@ public:
     // C++ 17 里面有 Any 类型，
     Any run() override { // 这里应该返回值为 int
         std::cout << "tid:" << std::this_thread::get_id() << " begin!" << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(3));
         int sum = 0;
         for (int i = begin_; i <= end_; i++) {
             sum += i;
         }
         std::cout << "sum = " << sum << std::endl;
         std::cout << "tid:" << std::this_thread::get_id() << " end!" << std::endl;
+
         return sum;
     }
 
@@ -60,6 +62,10 @@ int main() {
     Result res1 = pool.submitTask(std::make_shared<MyTask>(1, 100));
     Result res2 = pool.submitTask(std::make_shared<MyTask>(1, 100));
     Result res3 = pool.submitTask(std::make_shared<MyTask>(1, 100));
+    Result res4 = pool.submitTask(std::make_shared<MyTask>(1, 100));
+    Result res5 = pool.submitTask(std::make_shared<MyTask>(1, 100));
+    Result res6 = pool.submitTask(std::make_shared<MyTask>(1, 100));
+
     int sum1 = res1.get().cast_<int>(); // get 返回一个 Any 类型，怎么转化成具体的类型
     int sum2 = res2.get().cast_<int>(); // get 返回一个 Any 类型，怎么转化成具体的类型
     int sum3 = res3.get().cast_<int>(); // get 返回一个 Any 类型，怎么转化成具体的类型
