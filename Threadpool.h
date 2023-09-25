@@ -109,7 +109,6 @@ class Result {
 public:
     explicit Result(std::shared_ptr<Task> task, bool isValid = true);
 
-
     ~Result() = default;
 
     // 问题1. setVal 方法，获取任务执行的返回值
@@ -201,7 +200,7 @@ public:
     void setMode(PoolMode mode);
 
     // 开启线程池，并设置线程池的初始数量
-    void start(int initThreadSize = 4);
+    void start(unsigned int initThreadSize = std::thread::hardware_concurrency());
 
     // 设置 task 任务列表上线的阈值
     void setTaskQueMaxThreshold(int threshold);
@@ -233,7 +232,6 @@ private:
     int threadSizeThreshold_;                      // 线程数量上限阈值
     std::atomic_int idleThreadSize_;                 // 空闲线程的数量
 
-
 //    std::queue<Task *> task; // 有可能是临时对象task，因此不能用裸指针，需要延长对象的生命周期
     std::queue<std::shared_ptr<Task>> taskQue_; // 任务队列，使用强智能指针延长临时对象的周期
     std::atomic_int taskSize_; // 任务的数量
@@ -244,7 +242,7 @@ private:
     std::mutex taskQueMtx_; // 保证任务队列的线程安全（原子性）
     std::condition_variable notFull_;    // 保证队列不满
     std::condition_variable notEmpty_;   // 保证队列不空
-
+    std::condition_variable exitCond_; // 等待线程资源全部回收
     // 表示当前线程池的起动状态
     PoolMode poolMode_; // 当前线程池的工作模式
     std::atomic_bool isPoolRunning_;
