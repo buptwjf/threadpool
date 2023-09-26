@@ -125,11 +125,11 @@ Result Threadpool::submitTask(const std::shared_ptr<Task> &sp) {
 
 // 定义线程函数 - 负责消费任务
 void Threadpool::threadFunc(int threadId) { // 线程函数返回，相应的线程就结束了
-    // 实际情况需要所有线程执行完任务以后，线程池才能析构
-
     // 线程函数开始的时间
     auto lastTime = std::chrono::high_resolution_clock::now();
-    while (isPoolRunning_) { // 线程池一直循环
+    // 实际情况需要所有线程执行完任务以后，线程池才能析构
+    for (;;) { // 改用 for
+//    while (isPoolRunning_) { // 线程池一直循环
         std::shared_ptr<Task> task;
         // 先获取锁
         {
@@ -139,7 +139,14 @@ void Threadpool::threadFunc(int threadId) { // 线程函数返回，相应的线
 
             // cached 模式下，多余创建出来的线程如果超过 60s 没有被使用，就应该进行回收
             // 锁加双重判断
-            while (isPoolRunning_ && taskQue_.size() == 0) {
+//            while (isPoolRunning_ && taskQue_.size() == 0) {
+            while (taskQue_.size() == 0) {
+                if (!isPoolRunning_) {
+                    threads_.erase(threadId);
+                    std::cout << "threadId:" << std::this_thread::get_id() << " exit!" << std::endl;
+                    exitCond_.notify_all();
+                    return; // 线程函数结束，线程结束
+                }
                 if (poolMode_ == PoolMode::MODE_CACHED) {
                     if (std::cv_status::timeout == notEmpty_.wait_for(lock, std::chrono::seconds(1))) {
                         // 如果是超时
@@ -169,9 +176,9 @@ void Threadpool::threadFunc(int threadId) { // 线程函数返回，相应的线
 //                }
             }
             // 线程池要结束了，回收线程资源
-            if (!isPoolRunning_) {
-                break;
-            }
+//            if (!isPoolRunning_) {
+//                break;
+//            }
 
             idleThreadSize_--; // 要去取任务去了
 
@@ -200,10 +207,7 @@ void Threadpool::threadFunc(int threadId) { // 线程函数返回，相应的线
         lastTime = std::chrono::high_resolution_clock::now();
     }
 
-    // 当线程执行完之后，发现线程池关闭了，那么自身也析构
-    threads_.erase(threadId);
-    std::cout << "threadId:" << std::this_thread::get_id() << " exit!" << std::endl;
-    exitCond_.notify_all();
+
 }
 
 bool Threadpool::checkRunningState() const {

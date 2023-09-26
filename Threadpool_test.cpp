@@ -33,7 +33,7 @@ public:
     // C++ 17 里面有 Any 类型，
     Any run() override { // 这里应该返回值为 int
         std::cout << "tid:" << std::this_thread::get_id() << " begin!" << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(5));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         int sum = 0;
         for (int i = begin_; i <= end_; i++) {
             sum += i;
@@ -60,8 +60,8 @@ int main() {
         pool.submitTask(std::make_shared<MyTask>(1, 100000));
         pool.submitTask(std::make_shared<MyTask>(1, 100000));
         pool.submitTask(std::make_shared<MyTask>(1, 100000));
-//        int sum = res1.get().cast_<int>();
-//        std::cout << sum << std::endl;
+        int sum = res1.get().cast_<int>();
+        std::cout << sum << std::endl;
 //      当注释上面几句话后，不调用 get，线程会马上结束，即使没开始
     }
 
