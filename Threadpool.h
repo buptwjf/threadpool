@@ -77,12 +77,17 @@ Any::Any(T data) {
 // 实现一个信号量
 class Semaphore {
 public:
-    explicit Semaphore(int limit = 0) : resLimit_(limit) {}
+    explicit Semaphore(int limit = 0) : resLimit_(limit), isExit_(false) {}
 
-    ~Semaphore() = default;
+    ~Semaphore() {
+        isExit_ = true;
+    };
 
     // 获取一个信号量资源
     void wait() {
+        if (isExit_) {
+            return;
+        }
         std::unique_lock<std::mutex> lock(mtx_);
         // 等待信号量有资源，没有资源的话，会阻塞当前线程
         cond_.wait(lock, [&]() -> bool { return resLimit_ > 0; });
@@ -91,12 +96,16 @@ public:
 
     // 增加一个信号量资源
     void post() {
+        if (isExit_) {
+            return;
+        }
         std::unique_lock<std::mutex> lock(mtx_);
         resLimit_++;
         cond_.notify_all();
     }
 
 private:
+    std::atomic_bool isExit_;
     int resLimit_; // 负责资源计数
     std::mutex mtx_;
     std::condition_variable cond_;
