@@ -4,7 +4,7 @@
 #include "chrono"
 #include "thread"
 #include "iostream"
-
+#include "future"
 
 //class MyTask : public Task {
 //public:
@@ -49,19 +49,38 @@ private:
     int end_;
 };
 
+int sum(int a, int b) {
+    return a + b;
+}
+
+/*
+ * 我们自己打造的 Result 以及相关类型，代码太多
+ * 可以使用 C++11 的线程库 thread packaged_task(function 函数对象)
+ * 使用 future 代替 Result
+ * */
 int main() {
     {
         Threadpool pool;
         // 开启线程池
         pool.start(2);
 
-        Result res1 = pool.submitTask(std::make_shared<MyTask>(1, 100000));
-        pool.submitTask(std::make_shared<MyTask>(1, 100000));
-        pool.submitTask(std::make_shared<MyTask>(1, 100000));
-        pool.submitTask(std::make_shared<MyTask>(1, 100000));
-        pool.submitTask(std::make_shared<MyTask>(1, 100000));
-        int sum = res1.get().cast_<int>();
-        std::cout << sum << std::endl;
+        // 使用 C++11 新标准 引出问题
+        std::packaged_task<int(int, int)> task(sum);
+        // future <=> Result
+        std::future<int> res = task.get_future();
+//      task(10, 20);
+        std::thread t(std::move(task), 10, 20);
+        t.detach();
+        std::cout << res.get() << std::endl;
+
+
+//        Result res1 = pool.submitTask(std::make_shared<MyTask>(1, 100000));
+//        pool.submitTask(std::make_shared<MyTask>(1, 100000));
+//        pool.submitTask(std::make_shared<MyTask>(1, 100000));
+//        pool.submitTask(std::make_shared<MyTask>(1, 100000));
+//        pool.submitTask(std::make_shared<MyTask>(1, 100000));
+//        int sum = res1.get().cast_<int>();
+//        std::cout << sum << std::endl;
 //      当注释上面几句话后，不调用 get，线程会马上结束，即使没开始
     }
 
