@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" serverName="aliyun (681d11a3-09e9-40ff-b5a8-1137a844dbc8)" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="aliyun (ba1e8b5d-a6e0-4a90-b936-71244586474c)">
+      <paths name="aliyun (681d11a3-09e9-40ff-b5a8-1137a844dbc8)">
         <serverdata>
           <mappings>
-            <mapping local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/project/threadpool" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
