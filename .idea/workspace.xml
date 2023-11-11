@@ -16,9 +16,8 @@
     <configurations />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fcc8bda8-a73f-48b2-8a79-9c4a9f56e229" name="更改" comment="">
+    <list default="true" id="d28880e7-4fc9-4708-b939-251226e7b5b9" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Threadpool.h" beforeDir="false" afterPath="$PROJECT_DIR$/Threadpool.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -32,13 +31,18 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="temp_v1" />
+        <entry key="$PROJECT_DIR$" value="master" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectApplicationVersion">
+    <option name="ide" value="CLion" />
+    <option name="majorVersion" value="2023" />
+    <option name="minorVersion" value="1.1" />
   </component>
   <component name="ProjectId" id="2VjyvRwApY9IWkM5e7l7FMuWZsD" />
   <component name="ProjectViewState">
@@ -47,28 +51,37 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.cidr.known.project.marker": "true",
     "WebServerToolWindowFactoryState": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "git-widget-placeholder": "AnyTask",
-    "last_opened_file_path": "D:/git_rep/threadpool/CMakeLists.txt",
+    "last_opened_file_path": "D:/02learn/github repositoty/newthreadpool/threadpool",
     "node.js.selected.package.tslint": "(autodetect)",
     "structure.view.defaults.are.configured": "true",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RunManager">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="应用程序级" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="默认任务">
-      <changelist id="fcc8bda8-a73f-48b2-8a79-9c4a9f56e229" name="更改" comment="" />
+      <changelist id="d28880e7-4fc9-4708-b939-251226e7b5b9" name="更改" comment="" />
       <created>1695288444674</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1695288444674</updated>
       <workItem from="1695288445774" duration="7060000" />
       <workItem from="1695364019695" duration="16000" />
+      <workItem from="1699724032832" duration="62000" />
     </task>
     <servers />
   </component>
